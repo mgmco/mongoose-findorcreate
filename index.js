@@ -25,6 +25,10 @@ function findOrCreatePlugin(schema, opts) {
       if (object && !dirty) return callback(err, object, isNew);
 
       if (!object) {
+        for (let field in conditions) {
+          if (field.slice(0, 1) !== '$') delete conditions[field];
+        }
+
         object = new Model(conditions);
         isNew = true;
       }
@@ -41,6 +45,6 @@ function findOrCreatePlugin(schema, opts) {
       });
     });
   };
-};
+}
 
 module.exports = findOrCreatePlugin;
