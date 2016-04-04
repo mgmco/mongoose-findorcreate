@@ -32,7 +32,7 @@ function findOrCreatePlugin(schema, options) {
         }
       } else {
         for (var key in doc) {
-         conditions[key] = doc[key]; 
+         if (key.slice(0, -1) !== '$') conditions[key] = doc[key];
         }
         var obj = new self(conditions)
         obj.save(function(err) {
