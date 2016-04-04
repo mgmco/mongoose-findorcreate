@@ -17,7 +17,7 @@ function findOrCreatePlugin(schema, opts) {
   schema.statics.findOrCreate = function findOrCreate(conditions) {
     const dirty = typeof arguments[1] === 'object' ? arguments[1] : null;
     const callback = typeof arguments[arguments.length - 1] === 'function' ? arguments[arguments.length - 1] : console.log;
-    const Model = this;
+    //const Model = this;
     let isNew = false;
 
     this.findOne(conditions, (err, object) => {
@@ -26,10 +26,10 @@ function findOrCreatePlugin(schema, opts) {
 
       if (!object) {
         for (let field in conditions) {
-          if (field.slice(0, 1) !== '$') delete conditions[field];
+          if (field.slice(0, 1) === '$') delete conditions[field];
         }
 
-        object = new Model(conditions);
+        object = new (this)(conditions);
         isNew = true;
       }
 
