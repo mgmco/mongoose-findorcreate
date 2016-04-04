@@ -1,50 +1,46 @@
+'use strict';
+
 /*!
  * Mongoose findOrCreate Plugin
  * Copyright(c) 2012 Nicholas Penree <nick@penree.com>
  * MIT Licensed
+
+ This plugin has been completely re-written in ES6 and with a couple new caveats
+ so it will work a little more efficiently.
+
+ One thing that is now different is that if any conditions are passed with Mongo
+ search parameters (like for example { updatedAt: { $exists: false } }), the
+ plugin will stop trying to save those as the field.
  */
 
-function findOrCreatePlugin(schema, options) {
-  schema.statics.findOrCreate = function findOrCreate(conditions, doc, options, callback) {
-    if (arguments.length < 4) {
-      if (typeof options === 'function') {
-        // Scenario: findOrCreate(conditions, doc, callback)
-        callback = options;
-        options = {};
-      } else if (typeof doc === 'function') {
-        // Scenario: findOrCreate(conditions, callback);
-        callback = doc;
-        doc = {};
-        options = {};
-      }
-    }
-    var self = this;
-    this.findOne(conditions, function(err, result) {
-      if(err || result) {
-        if(options && options.upsert && !err) {
-          self.update(conditions, doc, function(err, count){
-            self.findOne(conditions, function(err, result) {
-              callback(err, result, false);
-            });
-          })
-        } else {
-          callback(err, result, false)
-        }
-      } else {
-        for (var key in doc) {
-         if (key.slice(0, -1) !== '$') conditions[key] = doc[key];
-        }
-        var obj = new self(conditions)
-        obj.save(function(err) {
-          callback(err, obj, true);
-        });
-      }
-    })
-  }
-}
+function findOrCreatePlugin(schema, opts) {
+  schema.statics.findOrCreate = function findOrCreate(conditions) {
+    const dirty = typeof arguments[1] === 'object' ? arguments[1] : null;
+    const callback = typeof arguments[arguments.length - 1] === 'function' ? arguments[arguments.length - 1] : console.log;
+    const Model = this;
+    let isNew = false;
 
-/**
- * Expose `findOrCreatePlugin`.
- */
+    this.findOne(conditions, (err, object) => {
+      if (err) return callback(err);
+      if (object && !dirty) return callback(err, object, isNew);
+
+      if (!object) {
+        object = new Model(conditions);
+        isNew = true;
+      }
+
+      if (dirty) {
+        for (let field in dirty) {
+          if (field.slice(0, 1) !== '$') object[field] = dirty[field];
+        }
+      }
+
+      object.save((err) => {
+        if (err) return callback(err);
+        return callback(err, object, isNew);
+      });
+    });
+  };
+};
 
 module.exports = findOrCreatePlugin;
